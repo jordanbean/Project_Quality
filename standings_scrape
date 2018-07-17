@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jul 14 17:13:32 2018
+
+@author: jbean
+"""
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+team = []
+wins = []
+losses = []
+w_l_perc = []
+games_back = []
+year = []
+
+year_start = 1970
+year_end = 2018
+
+for yr in range(year_start, year_end):
+    
+    url = ("https://www.baseball-reference.com/leagues/MLB/%i-standings.shtml" %yr)
+
+    req = requests.get(url)
+    soup = BeautifulSoup(req.text, 'lxml')
+
+    tm = soup.find_all(class_ = 'left', attrs={'data-stat':'team_ID'})
+    league = (soup.find_all(class_ = 'left', attrs={'data-stat':'lg_ID'}))
+    win = soup.find_all('td', attrs={'class': 'right', 'data-stat':'W'})
+    loss = soup.find_all('td', attrs={'class': 'right', 'data-stat':'L'})
+    win_loss = soup.find_all('td', attrs={'class': 'right', 'data-stat':'win_loss_perc'})
+    gb = (soup.find_all(class_ = 'right', attrs={'data-stat':'games_back'}))
+
+    team.extend([i.text for i in tm])
+    wins.extend([i.text for i in win])
+    losses.extend([i.text for i in loss])
+    w_l_perc.extend([i.text for i in win_loss])
+    games_back.extend([i.text for i in gb])
+    
+    num_teams = len([i.text for i in tm])
+    
+    for i in range(num_teams):
+        year.append(yr)
+
+df_standings = pd.DataFrame({'team': team,
+                             'wins':wins,
+                             'losses':losses,
+                             'win_loss_perc':w_l_perc,
+                             'games_back':games_back,
+                             'year':year
+                             })
+    
+
+df_standings = df_standings[['team', 'wins','losses','win_loss_perc','games_back']]
+
+df_standings.to_csv(r'C:\Users\jbean\Dropbox\Other\Python\baseballdatabank-2017.1\Project_Quality\standings_scrape.csv')
