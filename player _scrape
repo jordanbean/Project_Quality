@@ -1,0 +1,76 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul  9 12:12:25 2018
+
+@author: jbean
+"""
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+page = requests.get('http://www.thebaseballcube.com/players/mlb.asp')
+soup = BeautifulSoup(page.text, 'html.parser')
+
+
+# Get all sub-sites within the baseball cube to scrape
+
+all_sites = []
+
+
+links = soup.find(class_='dataGrid')
+
+for lnk in links.find_all('a',href=True):
+    all_sites.append('http://www.thebaseballcube.com/players/' + lnk['href'])
+
+all_data = []
+player_name= []
+position = []
+player_born = []
+mlb_years = []
+player_draft_info = []
+current_org = []
+
+for site in all_sites:
+    
+    pge = requests.get(site)
+    soup_1 = BeautifulSoup(pge.text, 'html.parser')
+
+
+    dataGrid = soup_1.find(class_ = 'dataGrid')
+    dG_tr = dataGrid.find_all('tr')
+
+    for i in dG_tr:
+    
+        cols = i.find_all('td')
+        cols = [ele.text.strip() for ele in cols]
+    
+        if 'Top' in cols or 'player' in cols or 'player(s) listed' in cols or 'Player' in cols or 'Pos' in cols:
+        
+            continue
+    
+        else:
+    
+            try:
+                
+                all_data.append(cols)
+                player_name.append(cols[0])
+                position.append(cols[1])
+                player_born.append(cols[6])
+                mlb_years.append(cols[10])
+                player_draft_info.append(cols[11])
+                current_org.append(cols[13])
+    
+            except:
+                continue
+            
+player_name = [x for x in player_name if not 'player(s) listed' in x]
+
+df_scrape = pd.DataFrame({'player_name':player_name,
+                          'position': position,
+                          'year_born': player_born,
+                          'mlb_career':mlb_years,
+                          'draft_info':player_draft_info,
+                          'current_org':current_org})
+
+df_scrape.to_csv(r'C:\Users\jbean\Dropbox\Other\Python\baseballdatabank-2017.1\Project_Quality\player_scrape.csv')
