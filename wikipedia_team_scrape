@@ -1,0 +1,51 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 11 13:37:17 2018
+
+@author: jbean
+"""
+
+import requests
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+
+
+# Scrape a table from Wikipedia with each team in the MLB and the year it was founded.
+
+WIKI_URL = "https://en.wikipedia.org/wiki/Major_League_Baseball"
+
+req = requests.get(WIKI_URL)
+soup = BeautifulSoup(req.text, 'lxml')
+
+team = []
+year_founded = []
+
+table_class = soup.find(class_='navbox wikitable')
+rows = table_class.find_all('tr')
+
+for i in rows:
+  
+    cols = i.find_all("td")
+    cols = [ele.text.strip() for ele in cols]
+    
+    try:
+        
+        team.append(cols[0])
+        
+        if ('W' in cols[-3]):
+            
+            year_founded.append(cols[-2])
+            
+        else:
+            year_founded.append(cols[-3])
+
+    except:
+        continue
+
+
+year_founded = [int(re.sub('[^0-9]','', i)) for i in year_founded]
+
+df_wiki = pd.DataFrame({'year_founded': year_founded}, index=team)
+    
+df_wiki.to_csv(r'C:\Users\jbean\Dropbox\Other\Python\baseballdatabank-2017.1\Project_Quality\wiki_team_scrape.csv')
